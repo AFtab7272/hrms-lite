@@ -12,7 +12,10 @@ app = FastAPI(title="HRMS Lite API")
 # ---------------- CORS CONFIG ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",                      # local frontend
+        "https://relaxed-empanada-270748.netlify.app" # production frontend
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -109,7 +112,7 @@ def mark_attendance(
 
 
 @app.get("/attendance/{employee_id}", response_model=list[schemas.AttendanceResponse])
-def get_attendance(employee_id: str, db: Session = Depends(get_db)):
+def get_attendance(employee_id: int, db: Session = Depends(get_db)):
     return db.query(models.Attendance).filter(
         models.Attendance.employee_id == employee_id
     ).all()
