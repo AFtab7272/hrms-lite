@@ -9,13 +9,10 @@ from database import engine, SessionLocal
 # ---------------- APP INIT ----------------
 app = FastAPI(title="HRMS Lite API")
 
-# ---------------- CORS CONFIG ----------------
+# ---------------- CORS (FIXED) ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",                      # local frontend
-        "https://relaxed-empanada-270748.netlify.app" # production frontend
-    ],
+    allow_origins=["*"],   # 🔥 allow Netlify + localhost
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,7 +58,6 @@ def create_employee(
     db.add(new_employee)
     db.commit()
     db.refresh(new_employee)
-
     return new_employee
 
 
@@ -71,9 +67,9 @@ def get_employees(db: Session = Depends(get_db)):
 
 
 @app.delete("/employees/{employee_id}")
-def delete_employee(employee_id: str, db: Session = Depends(get_db)):
+def delete_employee(employee_id: int, db: Session = Depends(get_db)):
     employee = db.query(models.Employee).filter(
-        models.Employee.employee_id == employee_id
+        models.Employee.id == employee_id
     ).first()
 
     if not employee:
@@ -81,8 +77,7 @@ def delete_employee(employee_id: str, db: Session = Depends(get_db)):
 
     db.delete(employee)
     db.commit()
-
-    return {"message": f"Employee {employee_id} deleted successfully"}
+    return {"message": "Employee deleted"}
 
 # ---------------- ATTENDANCE APIs ----------------
 
@@ -107,7 +102,6 @@ def mark_attendance(
     db.add(new_attendance)
     db.commit()
     db.refresh(new_attendance)
-
     return new_attendance
 
 
