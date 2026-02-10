@@ -7,12 +7,19 @@ import schemas
 from database import engine, SessionLocal
 
 # ---------------- APP INIT ----------------
-app = FastAPI(title="HRMS Lite API")
+app = FastAPI(
+    title="HRMS Lite API",
+    docs_url="/docs",        # 🔥 force swagger
+    redoc_url="/redoc"
+)
 
-# ---------------- CORS (FIXED) ----------------
+# ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # 🔥 allow Netlify + localhost
+    allow_origins=[
+        "http://localhost:5173",
+        "https://relaxed-empanada-270748.netlify.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -21,7 +28,7 @@ app.add_middleware(
 # ---------------- DB INIT ----------------
 models.Base.metadata.create_all(bind=engine)
 
-# ---------------- DB DEPENDENCY ----------------
+# ---------------- DB DEP ----------------
 def get_db():
     db = SessionLocal()
     try:
@@ -34,75 +41,54 @@ def get_db():
 def root():
     return {"message": "HRMS Lite Backend Running"}
 
-# ---------------- EMPLOYEE APIs ----------------
+# ---------------- SEED (🔥 IMPORTANT) ----------------
+@app.post("/seed")
+def seed_data(db: Session = Depends(get_db)):
+    if db.query(models.Employee).count() > 0:
+        return {"message": "Employees already exist"}
 
-@app.post("/employees", response_model=schemas.EmployeeResponse)
-def create_employee(
-    employee: schemas.EmployeeCreate,
-    db: Session = Depends(get_db)
-):
-    existing = db.query(models.Employee).filter(
-        models.Employee.employee_id == employee.employee_id
-    ).first()
-
-    if existing:
-        raise HTTPException(status_code=400, detail="Employee ID already exists")
-
-    new_employee = models.Employee(
-        employee_id=employee.employee_id,
-        full_name=employee.full_name,
-        email=employee.email,
-        department=employee.department
+    emp = models.Employee(
+        employee_id="EMP001",
+        full_name="Aftab Ansari",
+        email="aftab@example.com",
+        department="Engineering"
     )
 
-    db.add(new_employee)
+    db.add(emp)
     db.commit()
-    db.refresh(new_employee)
-    return new_employee
+    return {"message": "Seed data added"}
+
+# ---------------- EMPLOYEES ----------------
+@app.post("/employees", response_model=schemas.EmployeeResponse)
+def create_employee(employee: schemas.EmployeeCreate, db: Session = Depends(get_db)):
+    if db.query(models.Employee).filter(
+        models.Employee.employee_id == employee.employee_id
+    ).first():
+        raise HTTPException(status_code=400, detail="Employee already exists")
+
+    emp = models.Employee(**employee.dict())
+    db.add(emp)
+    db.commit()
+    db.refresh(emp)
+    return emp
 
 
 @app.get("/employees", response_model=list[schemas.EmployeeResponse])
 def get_employees(db: Session = Depends(get_db)):
     return db.query(models.Employee).all()
 
-
-@app.delete("/employees/{employee_id}")
-def delete_employee(employee_id: int, db: Session = Depends(get_db)):
-    employee = db.query(models.Employee).filter(
-        models.Employee.id == employee_id
-    ).first()
-
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
-
-    db.delete(employee)
-    db.commit()
-    return {"message": "Employee deleted"}
-
-# ---------------- ATTENDANCE APIs ----------------
-
+# ---------------- ATTENDANCE ----------------
 @app.post("/attendance", response_model=schemas.AttendanceResponse)
-def mark_attendance(
-    attendance: schemas.AttendanceCreate,
-    db: Session = Depends(get_db)
-):
-    employee = db.query(models.Employee).filter(
-        models.Employee.id == attendance.employee_id
-    ).first()
-
-    if not employee:
+def mark_attendance(att: schemas.AttendanceCreate, db: Session = Depends(get_db)):
+    emp = db.query(models.Employee).filter(models.Employee.id == att.employee_id).first()
+    if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    new_attendance = models.Attendance(
-        employee_id=attendance.employee_id,
-        date=attendance.date,
-        status=attendance.status
-    )
-
-    db.add(new_attendance)
+    record = models.Attendance(**att.dict())
+    db.add(record)
     db.commit()
-    db.refresh(new_attendance)
-    return new_attendance
+    db.refresh(record)
+    return record
 
 
 @app.get("/attendance/{employee_id}", response_model=list[schemas.AttendanceResponse])
