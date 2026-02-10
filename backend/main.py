@@ -14,12 +14,12 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-# ---------------- CORS CONFIG ----------------
+# ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://relaxed-empanada-270748.netlify.app",
+        "https://relaxed-empanada-270748.netlify.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -29,7 +29,7 @@ app.add_middleware(
 # ---------------- DB INIT ----------------
 models.Base.metadata.create_all(bind=engine)
 
-# ---------------- DB DEPENDENCY ----------------
+# ---------------- DB DEP ----------------
 def get_db():
     db = SessionLocal()
     try:
@@ -42,8 +42,7 @@ def get_db():
 def root():
     return {"message": "HRMS Lite Backend Running"}
 
-# ---------------- EMPLOYEE APIs ----------------
-
+# ---------------- EMPLOYEES ----------------
 @app.post("/employees", response_model=schemas.EmployeeResponse)
 def create_employee(employee: schemas.EmployeeCreate, db: Session = Depends(get_db)):
     existing = db.query(models.Employee).filter(
@@ -65,22 +64,21 @@ def get_employees(db: Session = Depends(get_db)):
     return db.query(models.Employee).all()
 
 
-# ---------------- ATTENDANCE APIs ----------------
-
+# ---------------- ATTENDANCE ----------------
 @app.post("/attendance", response_model=schemas.AttendanceResponse)
-def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db)):
+def mark_attendance(att: schemas.AttendanceCreate, db: Session = Depends(get_db)):
     emp = db.query(models.Employee).filter(
-        models.Employee.id == attendance.employee_id
+        models.Employee.id == att.employee_id
     ).first()
 
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    att = models.Attendance(**attendance.dict())
-    db.add(att)
+    record = models.Attendance(**att.dict())
+    db.add(record)
     db.commit()
-    db.refresh(att)
-    return att
+    db.refresh(record)
+    return record
 
 
 @app.get("/attendance/{employee_id}", response_model=list[schemas.AttendanceResponse])
