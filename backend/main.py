@@ -9,16 +9,17 @@ from database import engine, SessionLocal
 # ---------------- APP INIT ----------------
 app = FastAPI(
     title="HRMS Lite API",
-    docs_url="/docs",        # 🔥 force swagger
-    redoc_url="/redoc"
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
-# ---------------- CORS ----------------
+# ---------------- CORS CONFIG ----------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://relaxed-empanada-270748.netlify.app"
+        "https://relaxed-empanada-270748.netlify.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -28,7 +29,7 @@ app.add_middleware(
 # ---------------- DB INIT ----------------
 models.Base.metadata.create_all(bind=engine)
 
-# ---------------- DB DEP ----------------
+# ---------------- DB DEPENDENCY ----------------
 def get_db():
     db = SessionLocal()
     try:
@@ -41,30 +42,16 @@ def get_db():
 def root():
     return {"message": "HRMS Lite Backend Running"}
 
-# ---------------- SEED (🔥 IMPORTANT) ----------------
-@app.post("/seed")
-def seed_data(db: Session = Depends(get_db)):
-    if db.query(models.Employee).count() > 0:
-        return {"message": "Employees already exist"}
+# ---------------- EMPLOYEE APIs ----------------
 
-    emp = models.Employee(
-        employee_id="EMP001",
-        full_name="Aftab Ansari",
-        email="aftab@example.com",
-        department="Engineering"
-    )
-
-    db.add(emp)
-    db.commit()
-    return {"message": "Seed data added"}
-
-# ---------------- EMPLOYEES ----------------
 @app.post("/employees", response_model=schemas.EmployeeResponse)
 def create_employee(employee: schemas.EmployeeCreate, db: Session = Depends(get_db)):
-    if db.query(models.Employee).filter(
+    existing = db.query(models.Employee).filter(
         models.Employee.employee_id == employee.employee_id
-    ).first():
-        raise HTTPException(status_code=400, detail="Employee already exists")
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Employee ID already exists")
 
     emp = models.Employee(**employee.dict())
     db.add(emp)
@@ -77,18 +64,23 @@ def create_employee(employee: schemas.EmployeeCreate, db: Session = Depends(get_
 def get_employees(db: Session = Depends(get_db)):
     return db.query(models.Employee).all()
 
-# ---------------- ATTENDANCE ----------------
+
+# ---------------- ATTENDANCE APIs ----------------
+
 @app.post("/attendance", response_model=schemas.AttendanceResponse)
-def mark_attendance(att: schemas.AttendanceCreate, db: Session = Depends(get_db)):
-    emp = db.query(models.Employee).filter(models.Employee.id == att.employee_id).first()
+def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db)):
+    emp = db.query(models.Employee).filter(
+        models.Employee.id == attendance.employee_id
+    ).first()
+
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    record = models.Attendance(**att.dict())
-    db.add(record)
+    att = models.Attendance(**attendance.dict())
+    db.add(att)
     db.commit()
-    db.refresh(record)
-    return record
+    db.refresh(att)
+    return att
 
 
 @app.get("/attendance/{employee_id}", response_model=list[schemas.AttendanceResponse])
