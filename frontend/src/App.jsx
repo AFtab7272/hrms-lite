@@ -9,21 +9,25 @@ function App() {
   const [status, setStatus] = useState("Present");
   const [loading, setLoading] = useState(true);
 
+  // Load employees
   useEffect(() => {
     fetch(`${API_BASE}/employees`)
       .then((res) => res.json())
       .then((data) => {
         setEmployees(data);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
+  // Load attendance
   const loadAttendance = (empId) => {
     fetch(`${API_BASE}/attendance/${empId}`)
       .then((res) => res.json())
       .then((data) => setAttendance(data));
   };
 
+  // Mark attendance
   const markAttendance = () => {
     if (!selectedEmp) {
       alert("Please select employee");
@@ -47,7 +51,7 @@ function App() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
       <h1>HRMS Lite</h1>
 
       {!loading && (
@@ -73,6 +77,8 @@ function App() {
         </table>
       )}
 
+      <hr />
+
       <h2>Attendance</h2>
 
       <select
@@ -93,22 +99,31 @@ function App() {
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value)}
+        style={{ marginLeft: "10px" }}
       >
         <option value="Present">Present</option>
         <option value="Absent">Absent</option>
       </select>
 
-      <button onClick={markAttendance}>Mark Attendance</button>
+      <button onClick={markAttendance} style={{ marginLeft: "10px" }}>
+        Mark Attendance
+      </button>
 
       {attendance.length > 0 && (
         <>
           <h3>Attendance History</h3>
-          <table border="1">
+          <table border="1" cellPadding="10">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
             <tbody>
-              {attendance.map((a) => (
-                <tr key={a.id}>
-                  <td>{a.date}</td>
-                  <td>{a.status}</td>
+              {attendance.map((att) => (
+                <tr key={att.id}>
+                  <td>{att.date}</td>
+                  <td>{att.status}</td>
                 </tr>
               ))}
             </tbody>
