@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const API_BASE = "https://hrms-lite-backend-ionk.onrender.com";
+const API_BASE = "https://hrms-lite-backend-jonk.onrender.com";
 
 function App() {
   const [employees, setEmployees] = useState([]);
@@ -47,7 +47,7 @@ function App() {
   };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+    <div style={{ padding: 20 }}>
       <h1>HRMS Lite</h1>
 
       {!loading && (
@@ -73,8 +73,6 @@ function App() {
         </table>
       )}
 
-      <hr />
-
       <h2>Attendance</h2>
 
       <select
@@ -95,31 +93,22 @@ function App() {
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value)}
-        style={{ marginLeft: "10px" }}
       >
         <option value="Present">Present</option>
         <option value="Absent">Absent</option>
       </select>
 
-      <button onClick={markAttendance} style={{ marginLeft: "10px" }}>
-        Mark Attendance
-      </button>
+      <button onClick={markAttendance}>Mark Attendance</button>
 
       {attendance.length > 0 && (
         <>
           <h3>Attendance History</h3>
-          <table border="1" cellPadding="10">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+          <table border="1">
             <tbody>
-              {attendance.map((att) => (
-                <tr key={att.id}>
-                  <td>{att.date}</td>
-                  <td>{att.status}</td>
+              {attendance.map((a) => (
+                <tr key={a.id}>
+                  <td>{a.date}</td>
+                  <td>{a.status}</td>
                 </tr>
               ))}
             </tbody>
