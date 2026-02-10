@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+const API_BASE = "https://hrms-lite-backend-ionk.onrender.com";
+
 function App() {
   const [employees, setEmployees] = useState([]);
   const [selectedEmp, setSelectedEmp] = useState("");
@@ -9,17 +11,19 @@ function App() {
 
   // Load employees
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/employees")
+    fetch(`${API_BASE}/employees`)
       .then((res) => res.json())
       .then((data) => {
         setEmployees(data);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   // Load attendance for selected employee
   const loadAttendance = (empId) => {
-    fetch(`http://127.0.0.1:8000/attendance/${empId}`)
+    if (!empId) return;
+    fetch(`${API_BASE}/attendance/${empId}`)
       .then((res) => res.json())
       .then((data) => setAttendance(data));
   };
@@ -37,14 +41,14 @@ function App() {
       status: status,
     };
 
-    fetch("http://127.0.0.1:8000/attendance", {
+    fetch(`${API_BASE}/attendance`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     })
       .then(() => {
         loadAttendance(selectedEmp);
-        alert("Attendance marked");
+        alert("Attendance marked successfully");
       });
   };
 
@@ -53,7 +57,11 @@ function App() {
       <h1>HRMS Lite</h1>
 
       {/* EMPLOYEE TABLE */}
-      {!loading && (
+      {loading && <p>Loading employees...</p>}
+
+      {!loading && employees.length === 0 && <p>No employees found</p>}
+
+      {!loading && employees.length > 0 && (
         <table border="1" cellPadding="10">
           <thead>
             <tr>
