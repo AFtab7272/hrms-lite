@@ -9,26 +9,21 @@ function App() {
   const [status, setStatus] = useState("Present");
   const [loading, setLoading] = useState(true);
 
-  // Load employees
   useEffect(() => {
     fetch(`${API_BASE}/employees`)
       .then((res) => res.json())
       .then((data) => {
         setEmployees(data);
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      });
   }, []);
 
-  // Load attendance for selected employee
   const loadAttendance = (empId) => {
-    if (!empId) return;
     fetch(`${API_BASE}/attendance/${empId}`)
       .then((res) => res.json())
       .then((data) => setAttendance(data));
   };
 
-  // Mark attendance
   const markAttendance = () => {
     if (!selectedEmp) {
       alert("Please select employee");
@@ -38,30 +33,24 @@ function App() {
     const payload = {
       employee_id: Number(selectedEmp),
       date: new Date().toISOString().split("T")[0],
-      status: status,
+      status,
     };
 
     fetch(`${API_BASE}/attendance`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    })
-      .then(() => {
-        loadAttendance(selectedEmp);
-        alert("Attendance marked successfully");
-      });
+    }).then(() => {
+      loadAttendance(selectedEmp);
+      alert("Attendance marked");
+    });
   };
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
       <h1>HRMS Lite</h1>
 
-      {/* EMPLOYEE TABLE */}
-      {loading && <p>Loading employees...</p>}
-
-      {!loading && employees.length === 0 && <p>No employees found</p>}
-
-      {!loading && employees.length > 0 && (
+      {!loading && (
         <table border="1" cellPadding="10">
           <thead>
             <tr>
@@ -86,7 +75,6 @@ function App() {
 
       <hr />
 
-      {/* ATTENDANCE SECTION */}
       <h2>Attendance</h2>
 
       <select
@@ -117,7 +105,6 @@ function App() {
         Mark Attendance
       </button>
 
-      {/* ATTENDANCE HISTORY */}
       {attendance.length > 0 && (
         <>
           <h3>Attendance History</h3>
